@@ -1,101 +1,169 @@
 import sys, re
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 import checkableComboBox
 import numpy as np
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
-
 ################################################################################
 #              GUI
 ################################################################################
+class MplCanvas(FigureCanvasQTAgg):
+    def __init__(self, doscar, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        self.axes.set_xlabel('$E-E_{F}$ (eV)', size=20)
+        self.axes.set_xlim(min(doscar.energy), max(doscar.energy))
+        self.axes.set_ylabel('states/N ($eV^{-1}$)', size=20)
+        self.axes.set_ylim(0, max(doscar.dos)*1.05)
+        self.axes.tick_params(labelsize=15)
+        self.axes.plot(doscar.energy, doscar.dos)
+        super(MplCanvas, self).__init__(fig)
 
-class Ui_Form(object):
-    def setupUi(self, Form, doscar):
-        Form.setObjectName("Form")
-        Form.resize(434, 453)
-        self.verticalLayoutWidget = QtWidgets.QWidget(Form)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 411, 431))
-        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+class Ui_MainWindow(object):
+    def setupUi(self, MainWindow, doscar):
+        if not MainWindow.objectName():
+            MainWindow.setObjectName(u"MainWindow")
+        self.left = 10
+        self.top = 10
+        self.width = 1920
+        self.height = 1080
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        #MainWindow.resize(1131, 657)
+        self.centralwidget = QWidget(MainWindow)
+        self.centralwidget.setObjectName(u"centralwidget")
+        self.verticalLayoutWidget = QWidget(self.centralwidget)
+        self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
+        self.verticalLayoutWidget.setGeometry(QRect(30, 10, 411, 601))
+        self.verticalLayout_2 = QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.label_3 = QtWidgets.QLabel(self.verticalLayoutWidget)
-        self.label_3.setObjectName("label_3")
+        self.label_3 = QLabel(self.verticalLayoutWidget)
+        self.label_3.setObjectName(u"label_3")
+
         self.verticalLayout_2.addWidget(self.label_3)
-        self.horizontalLayout = QtWidgets.QHBoxLayout()
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
-        self.label.setObjectName("label")
+
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.label = QLabel(self.verticalLayoutWidget)
+        self.label.setObjectName(u"label")
+
         self.horizontalLayout.addWidget(self.label)
-        self.spinBox = QtWidgets.QSpinBox(self.verticalLayoutWidget)
+
+        self.spinBox = QSpinBox(self.verticalLayoutWidget)
         self.spinBox.setObjectName("first_atom")
         self.spinBox.setRange(1, doscar.natoms)
+
         self.horizontalLayout.addWidget(self.spinBox)
-        spacerItem = QtWidgets.QSpacerItem(60, 40, QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.label_2 = QtWidgets.QLabel(self.verticalLayoutWidget)
-        self.label_2.setObjectName("label_2")
+
+        self.horizontalSpacer = QSpacerItem(60, 40, QSizePolicy.Preferred, QSizePolicy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
+        self.label_2 = QLabel(self.verticalLayoutWidget)
+        self.label_2.setObjectName(u"label_2")
+
         self.horizontalLayout.addWidget(self.label_2)
-        self.spinBox_2 = QtWidgets.QSpinBox(self.verticalLayoutWidget)
+
+        self.spinBox_2 = QSpinBox(self.verticalLayoutWidget)
         self.spinBox_2.setObjectName("last_atom")
         self.spinBox_2.setRange(1, doscar.natoms)
+
         self.horizontalLayout.addWidget(self.spinBox_2)
+
+
         self.verticalLayout_2.addLayout(self.horizontalLayout)
-        self.label_4 = QtWidgets.QLabel(self.verticalLayoutWidget)
-        self.label_4.setObjectName("label_4")
+
+        self.label_4 = QLabel(self.verticalLayoutWidget)
+        self.label_4.setObjectName(u"label_4")
+
         self.verticalLayout_2.addWidget(self.label_4)
+
         self.orbitals = checkableComboBox.CheckableComboBox(self.verticalLayoutWidget) 
         self.orbitals.addItems( doscar.guiLabel )
+
         self.verticalLayout_2.addWidget(self.orbitals)
-        self.label_5 = QtWidgets.QLabel(self.verticalLayoutWidget)
-        self.label_5.setObjectName("label_5")
+
+        self.label_5 = QLabel(self.verticalLayoutWidget)
+        self.label_5.setObjectName(u"label_5")
+
         self.verticalLayout_2.addWidget(self.label_5)
-        self.lineEdit = QtWidgets.QLineEdit(self.verticalLayoutWidget)
-        self.lineEdit.setObjectName("lineEdit")
+
+        self.lineEdit = QLineEdit(self.verticalLayoutWidget)
+        self.lineEdit.setObjectName(u"lineEdit")
+
         self.verticalLayout_2.addWidget(self.lineEdit)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_2.addItem(spacerItem1)
-        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.pushButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton.setObjectName("addLine")
+
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.verticalLayout_2.addItem(self.verticalSpacer)
+
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.pushButton = QPushButton(self.verticalLayoutWidget)
+        self.pushButton.setObjectName(u"add_line")
         self.pushButton.clicked.connect(self.clickAddLine)
+
         self.horizontalLayout_2.addWidget(self.pushButton)
-        self.pushButton_2 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton_2.setObjectName("save")
+
+        self.pushButton_2 = QPushButton(self.verticalLayoutWidget)
+        self.pushButton_2.setObjectName(u"save")
+
         self.horizontalLayout_2.addWidget(self.pushButton_2)
-        self.pushButton_3 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton_3.setObjectName("close")
+
+        self.pushButton_3 = QPushButton(self.verticalLayoutWidget)
+        self.pushButton_3.setObjectName(u"close")
         self.pushButton_3.clicked.connect(self.close)
+
         self.horizontalLayout_2.addWidget(self.pushButton_3)
+
+
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
 
-        self.retranslateUi(Form)
-        QtCore.QMetaObject.connectSlotsByName(Form)
+        self.horizontaLayoutWidget = QWidget(self.centralwidget)
+        self.horizontaLayoutWidget.setGeometry(QRect(460, 70, 651, 441))
+        self.horizontalLayout_3 = QHBoxLayout(self.horizontaLayoutWidget)
+        self.horizontalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.canvas = MplCanvas(doscar, width=5, height=4, dpi=100)
+        self.horizontalLayout_3.addWidget(self.canvas)
 
-    def retranslateUi(self, Form):
-        _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Form"))
-        self.label_3.setText(_translate("Form", "Project onto atoms:"))
-        self.label.setText(_translate("Form", "from:"))
-        self.label_2.setText(_translate("Form", "to:"))
-        self.label_4.setText(_translate("Form", "Project onto orbitals"))
-        self.label_5.setText(_translate("Form", "Line label:"))
-        self.pushButton.setText(_translate("Form", "Add line"))
-        self.pushButton_2.setText(_translate("Form", "Save"))
-        self.pushButton_3.setText(_translate("Form", "Close"))
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.menubar = QMenuBar(MainWindow)
+        self.menubar.setObjectName(u"menubar")
+        self.menubar.setGeometry(QRect(0, 0, 1131, 23))
+        MainWindow.setMenuBar(self.menubar)
+        self.statusbar = QStatusBar(MainWindow)
+        self.statusbar.setObjectName(u"statusbar")
+        MainWindow.setStatusBar(self.statusbar)
+
+        self.retranslateUi(MainWindow)
+
+        QMetaObject.connectSlotsByName(MainWindow)
+    # setupUi
+
+    def retranslateUi(self, MainWindow):
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Project onto atoms:", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"from:", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"to:", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Project onto orbitals", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Line label:", None))
+        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Add line", None))
+        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Save", None))
+        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"Close", None))
+    # retranslateUi
 
     def clickAddLine(self):
         atomlist = np.arange( self.spinBox.value()-1, self.spinBox_2.value() )
         orblist = self.orbitals.currentData()
         mylabel = self.lineEdit.text()
-        plt.plot(doscar.energy, doscar.projector(atomlist, orblist), label=mylabel)
-        plt.draw()
+        self.canvas.axes.plot(doscar.energy, doscar.projector(atomlist, orblist), label=mylabel)
+        self.canvas.draw()
 
 
-
-
-class App(QWidget, Ui_Form):
+class App(QMainWindow, Ui_MainWindow):
     def __init__(self, doscar, parent=None):
         super(App, self).__init__(parent)
         self.setupUi(self, doscar)
@@ -224,20 +292,17 @@ class DOSCAR:
         # Extract labels
         global label_ispin1_lm, label_ispin1, label_ispin2_lm, label_ispin2, label_ncl_lm, label_ncl
         if ( ispin==1 ):
-            if ( lm ): self.label = todic( label_ispin1_lm[:ncol] )
-            else: self.label = todic( label_ispin1[:ncol] )
+            if ( lm ): self.guiLabel = label_ispin1_lm[:ncol] 
+            else: self.guiLabel = label_ispin1[:ncol]
         elif ( ispin==2 ):
-            if ( lm ): self.label = todic( label_ispin1_lm[:ncol] )
-            else: self.label = todic( label_ispin2[:ncol] )
+            if ( lm ): self.guiLabel = label_ispin1_lm[:ncol]
+            else: self.guiLabel = label_ispin2[:ncol]
         elif ( ncl ):
             if ( lm ): 
-                self.label = todic( label_ncl_lm[:ncol] )
                 self.guiLabel = label_ncl_lm[:ncol]
-            else: self.label = todic( label_ncl[:ncol] )
+            else: self.guiLabel = label_ncl[:ncol]
         else: exit('\nUnrecognised structure. Aborting...\n')
-        
-        self.atomilst = []
-        self.orblist = []
+        self.label = todic( self.guiLabel )
     ##############################  
 
     ##### PROJECTOR #####
@@ -251,17 +316,12 @@ class DOSCAR:
 
     ##### PLOTTER #####
     def plot(self):
-        plt.xlabel('$E-E_{F}$ (eV)', size=20)
-        plt.xlim(min(self.energy), max(self.energy))
-        plt.ylabel('states/N ($eV^{-1}$)', size=20)
-        plt.ylim(0, max(self.dos)*1.05)
-        plt.tick_params(labelsize=15)
-        plt.plot(self.energy, self.dos, label='total')
         form = App(self)
         form.show()
         app.exec_()
-        plt.legend(loc='best')
-        plt.show()
+        #plt.plot(self.energy, self.dos, label='total')
+        #plt.legend(loc='best')
+        #plt.show()
 
 # embed matplotlib in pyqt
 
