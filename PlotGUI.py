@@ -1,4 +1,4 @@
-import ProjectorGUI, SaveDialog
+import Intro, Doscar, ProjectorGUI, SaveDialog, OpenDialog
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -33,14 +33,26 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow, doscar):
         MainWindow.setObjectName(u"Density of States")
         MainWindow.resize(1000, 800)
+        self.setWindowIcon( QIcon('icon.png') )
+        # open projector
         self.actionOpen_projector = QAction(MainWindow)
         self.actionOpen_projector.setObjectName(u"actionOpen_projector")
         self.actionOpen_projector.triggered.connect( self.open_projector )
+        if not doscar.enableProjector:
+            self.actionOpen_projector.setEnabled(False)
+        # save as
         self.actionSave_As = QAction(MainWindow)
         self.actionSave_As.setObjectName(u"actionSave_As")
         self.actionSave_As.triggered.connect( self.save_as )
+
+        # open folder
+        self.actionOpen = QAction(MainWindow)
+        self.actionOpen.setObjectName(u"open")
+        self.actionOpen.triggered.connect( self.open )
+        
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
+        
         self.horizontalLayout = QHBoxLayout(self.centralwidget)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         
@@ -65,33 +77,43 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menuEdit.addAction(self.actionOpen_projector)
+        self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionSave_As)
 
         self.retranslateUi(MainWindow)
 
         QMetaObject.connectSlotsByName(MainWindow)
-    # setupUi
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.actionOpen_projector.setText(QCoreApplication.translate("MainWindow", u"Open projector...", None))
         self.actionSave_As.setText(QCoreApplication.translate("MainWindow", u"Save As...", None))
+        self.actionOpen.setText(QCoreApplication.translate("MainWindow", u"Open project...", None))
         self.menuEdit.setTitle(QCoreApplication.translate("MainWindow", u"Edit", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
-    # retranslateUi
 
     def open_projector(self):
         self.projectorDialog.exec_()
 
     def save_as(self):
         self.saveDialog.saveFileDialog(self.canvas)
-        
+
+    def open(self):
+        path = self.openDialog.openDirectoryDialog()
+        doscar = Doscar.DOSCAR( path )
+        self.setupUi( self, doscar )
+        self.projectorDialog = ProjectorGUI.AppProj( doscar, self.canvas )
 
 
 class App(QMainWindow, Ui_MainWindow):
-    def __init__(self, doscar, parent=None):
+    def __init__(self, parent=None):
         super(App, self).__init__(parent)
-        self.setupUi(self, doscar)
-        self.projectorDialog = ProjectorGUI.AppProj(doscar, self.canvas)
+        intro = Intro.AppIntro()
+        intro.exec_()
+        self.openDialog = OpenDialog.AppOpen()
+        path = self.openDialog.openDirectoryDialog()
+        doscar = Doscar.DOSCAR( path )
+        self.setupUi( self, doscar )
+        self.projectorDialog = ProjectorGUI.AppProj( doscar, self.canvas )
         self.saveDialog = SaveDialog.AppSave( self.canvas )
 

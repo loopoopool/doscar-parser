@@ -1,4 +1,4 @@
-import sys, re, PlotGUI
+import sys, re, Incar, PlotGUI
 import numpy as np
 from PyQt5.QtWidgets import QApplication
 
@@ -66,13 +66,16 @@ def todic(labelarray):
 
 class DOSCAR:
     ##### COSNTRUCTOR #####
-    def __init__(self, filename):
+    def __init__(self):
+        pass
 
-        ispin=0
-        ncl = parse_yn_bool( input('Non-collinear?(y/n): ') )
-        if not ncl: ispin = int( input('ISPIN >> ') )
-        lm = parse_yn_bool( input('lm-decomposed dos?(y/n): ') )
-        with open(filename, 'r') as f:
+    def __init__(self, path):
+        incar = Incar.INCAR( path+'/INCAR' )
+#        ispin=0
+#        ncl = parse_yn_bool( input('Non-collinear?(y/n): ') )
+#        if not ncl: ispin = int( input('ISPIN >> ') )
+#        lm = parse_yn_bool( input('lm-decomposed dos?(y/n): ') )
+        with open( path+'/DOSCAR', 'r' ) as f:
             doscar = f.readlines()
 
         self.natoms, _, pdos, _ = [int(n) for n in split( doscar[0] )]
@@ -81,10 +84,11 @@ class DOSCAR:
         system = remove_all_whitespace( doscar[4] )
         emax, emin, nedos, efermi, _ = [float(n) for n in split( doscar[5] )]
         self.nedos = int(nedos)
+        self.enableProjector = len(doscar) > self.nedos+7
         counter = 6
         self.energy = np.zeros(self.nedos)
 
-        if ( ispin != 2 ):
+        if ( incar.ispin != 2 ):
             self.dos = np.zeros(self.nedos)
             for i in range(self.nedos):
                 self.energy[i], self.dos[i], _ = (float(x) for x in split( doscar[counter+i] ))
@@ -96,33 +100,35 @@ class DOSCAR:
 
         self.energy -= efermi
 
-        counter += self.nedos
-        # skip header
-        counter += 1
-        ncol = len( split( doscar[self.nedos+7] ) ) - 1 # remove one col for energies
-        self.pldos = np.zeros((self.natoms, self.nedos, ncol))
-
-        for i in range(self.natoms):
-            for j in range(self.nedos):
-                self.pldos[i,j] = np.array( [float(x) for x in split( doscar[counter] )[1:] ] )
-                counter += 1
+        if ( self.enableProjector ):
+            counter += self.nedos
             # skip header
             counter += 1
+            ncol = len( split( doscar[self.nedos+7] ) ) - 1 # remove one col for energies
+            self.pldos = np.zeros((self.natoms, self.nedos, ncol))
 
-        # Extract labels
-        global label_ispin1_lm, label_ispin1, label_ispin2_lm, label_ispin2, label_ncl_lm, label_ncl
-        if ( ispin==1 ):
-            if ( lm ): self.guiLabel = label_ispin1_lm[:ncol] 
-            else: self.guiLabel = label_ispin1[:ncol]
-        elif ( ispin==2 ):
-            if ( lm ): self.guiLabel = label_ispin1_lm[:ncol]
-            else: self.guiLabel = label_ispin2[:ncol]
-        elif ( ncl ):
-            if ( lm ): 
-                self.guiLabel = label_ncl_lm[:ncol]
-            else: self.guiLabel = label_ncl[:ncol]
-        else: exit('\nUnrecognised structure. Aborting...\n')
-        self.label = todic( self.guiLabel )
+            for i in range(self.natoms):
+                for j in range(self.nedos):
+                    self.pldos[i,j] = np.array( [float(x) for x in split( doscar[counter] )[1:] ] )
+                    counter += 1
+                # skip header
+                counter += 1
+
+            # Extract labels
+            lm = incar.lorbit == 11 or incar.lorbit == 1
+            global label_ispin1_lm, label_ispin1, label_ispin2_lm, label_ispin2, label_ncl_lm, label_ncl
+            if ( incar.ispin==1 ):
+                if ( lm ): self.guiLabel = label_ispin1_lm[:ncol] 
+                else: self.guiLabel = label_ispin1[:ncol]
+            elif ( incar.ispin==2 ):
+                if ( lm ): self.guiLabel = label_ispin1_lm[:ncol]
+                else: self.guiLabel = label_ispin2[:ncol]
+            elif ( incar.ncl ):
+                if ( lm ): 
+                    self.guiLabel = label_ncl_lm[:ncol]
+                else: self.guiLabel = label_ncl[:ncol]
+            else: exit('\nUnrecognised structure. Aborting...\n')
+            self.label = todic( self.guiLabel )
     ##############################  
 
     ##### PROJECTOR #####

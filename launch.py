@@ -1,13 +1,17 @@
-import sys, Doscar, PlotGUI
+import sys
+import Doscar, PlotGUI
+from PyQt5.QtWidgets import QApplication
 
-if ( len(sys.argv) != 2 ): 
-    print('doscar-parser >> Wrong number of arguments.')
-    exit(404)
+#if ( len(sys.argv) != 2 ): 
+#    print('doscar-parser >> Wrong number of arguments.')
+#    exit(404)
 
-print('\n%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-print('%%%%%%%%%%%%% DOSCAR-PARSER %%%%%%%%%%%%%%%%%%%%%%')
-print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n')
+#print('\n%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+#print('%%%%%%%%%%%%% DOSCAR-PARSER %%%%%%%%%%%%%%%%%%%%%%')
+#print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n')
 
-filename = sys.argv[1]
-dos = Doscar.DOSCAR(filename)
-dos.plot()
+#filename = sys.argv[1]
+app = QApplication(sys.argv)
+window = PlotGUI.App()
+window.show()
+app.exec_()

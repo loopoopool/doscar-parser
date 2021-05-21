@@ -146,5 +146,5 @@ class Ui_Dialog(object):
 class AppProj(QDialog, Ui_Dialog):
     def __init__(self, doscar, canvas, parent=None):
         super(AppProj, self).__init__(parent)
-        self.setupUi(self, doscar, canvas)
+        if doscar.enableProjector: self.setupUi(self, doscar, canvas)
 
