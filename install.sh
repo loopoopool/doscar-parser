@@ -1,9 +1,8 @@
 #!/bin/bash
 
 current=`pwd`
-printf "\nInstalling ploos...\n\nI need your password to copy some file in /usr/share"
+printf "\nInstalling ploos...\n\nI need your password to copy some file in /usr/share\n\n"
 
-sed -n "s/mydir/$current/p" ploos.desktop > ploos
-sudo cp ploos /usr/share/applications/ploos.desktop
+cat $current/ploos.desktop | sed "s|mydir|${current}|" > $current/tmp_ploos
+sudo mv $current/tmp_ploos /usr/share/applications/ploos.desktop
 sudo chmod 644 /usr/share/applications/ploos.desktop
-rm ploos

@@ -131,6 +131,7 @@ class DOSCAR:
             self.label = todic( self.guiLabel )
     ##############################  
 
+
     ##### PROJECTOR #####
     def projector(self, atoms, orbitals):
         projected = np.zeros(self.nedos)
