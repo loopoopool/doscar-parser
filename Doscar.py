@@ -62,8 +62,6 @@ def parse_yn_bool(x):
 def todic(labelarray):
     return { x : i for i, x in enumerate(labelarray) }
 
-
-
 class DOSCAR:
     ##### COSNTRUCTOR #####
     def __init__(self):
@@ -98,6 +96,7 @@ class DOSCAR:
             for i in range(self.nedos):
                 self.energy[i], self.dos_up[i], self.dos_down[i], _ = (float(x) for x in split( doscar[counter+i] ))
 
+        #self.dos /= vol
         self.energy -= efermi
 
         if ( self.enableProjector ):
@@ -147,7 +146,3 @@ class DOSCAR:
         form = PlotGUI.App(self)
         form.show()
         app.exec_()
-        #interface.app.exec_()
-        #plt.plot(self.energy, self.dos, label='total')
-        #plt.legend(loc='best')
-        #plt.show()

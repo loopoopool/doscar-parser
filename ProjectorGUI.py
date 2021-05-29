@@ -86,11 +86,11 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_2.addWidget(self.pushButton)
 
-        self.pushButton_2 = QPushButton(Dialog)
-        self.pushButton_2.setObjectName(u"pushButton_2")
-        self.pushButton_2.clicked.connect(self.clickRemoveLine)
-
-        self.horizontalLayout_2.addWidget(self.pushButton_2)
+#        self.pushButton_2 = QPushButton(Dialog)
+#        self.pushButton_2.setObjectName(u"pushButton_2")
+#        self.pushButton_2.clicked.connect(self.clickRemoveLine)
+#
+#        self.horizontalLayout_2.addWidget(self.pushButton_2)
 
         self.pushButton_3 = QPushButton(Dialog)
         self.pushButton_3.setObjectName(u"pushButton_3")
@@ -118,7 +118,7 @@ class Ui_Dialog(object):
         self.label_4.setText(QCoreApplication.translate("Dialog", u"Project onto orbitals", None))
         self.label_5.setText(QCoreApplication.translate("Dialog", u"Line label:", None))
         self.pushButton.setText(QCoreApplication.translate("Dialog", u"Add line", None))
-        self.pushButton_2.setText(QCoreApplication.translate("Dialog", u"Remove line", None))
+#        self.pushButton_2.setText(QCoreApplication.translate("Dialog", u"Remove line", None))
         self.pushButton_3.setText(QCoreApplication.translate("Dialog", u"Close", None))
     # retranslateUi
 
@@ -134,13 +134,13 @@ class Ui_Dialog(object):
         self.canvas.draw()
         self.lineEdit.clear()
 
-    def clickRemoveLine(self):
-        if ( self.linecounter > 0 ):
-            self.canvas.axes.get_legend().remove()
-            self.canvas.axes.lines.pop(self.linecounter)
-            self.canvas.axes.legend(loc='best')
-            self.canvas.draw()
-            self.linecounter -= 1
+#    def clickRemoveLine(self):
+#        if ( self.linecounter > 0 ):
+#            self.canvas.axes.get_legend().remove()
+#            self.canvas.axes.lines.pop(self.linecounter)
+#            self.canvas.axes.legend(loc='best')
+#            self.canvas.draw()
+#            self.linecounter -= 1
 
 
 class AppProj(QDialog, Ui_Dialog):
