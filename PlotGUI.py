@@ -1,4 +1,5 @@
-import Intro, Doscar, ProjectorGUI, SaveDialog, OpenDialog
+import numpy as np
+import Intro, Doscar, ProjectorGUI, SaveDialog, OpenDialog, LegendDialog
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -9,14 +10,15 @@ class MplCanvas(FigureCanvasQTAgg):
     def __init__(self, doscar, parent=None, width=10, height=3, dpi=100):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
-        self.axes.set_xlabel('$E-E_{F}$ (eV)', size=20)
+        self.axes.set_xlabel('$E-E_{F}$ (eV)', size=30)
         self.axes.set_xlim(min(doscar.energy), max(doscar.energy))
-        self.axes.set_ylabel('states ($eV^{-1}$)', size=20)
+        self.axes.set_ylabel('states ($eV^{-1}$)', size=30)
         self.axes.set_ylim(0, max(doscar.dos)*1.05)
-        self.axes.tick_params(labelsize=15)
-        self.axes.plot(doscar.energy, doscar.dos, label='total')
+        self.axes.tick_params(labelsize=25)
+        self.axes.plot(doscar.energy, doscar.dos, label='total', color='lightgrey')
+        self.axes.fill_between(doscar.energy, np.zeros(doscar.energy.shape), doscar.dos, color='lightgrey', alpha=0.6)
         self.axes.axvline(x=0.0, color='black')
-        self.axes.legend(loc='best')
+        self.axes.legend(loc='best', prop={'size' : 20})
 
         super(MplCanvas, self).__init__(self.fig)
         self.setParent(parent)
@@ -37,9 +39,9 @@ class Ui_MainWindow(object):
         self.setWindowIcon( QIcon('icon.png') )
         
         # remove line
-        self.actionRemoveLine = QAction(MainWindow)
-        self.actionRemoveLine.setObjectName(u'actionRemoveLine')
-        self.actionRemoveLine.triggered.connect( self.removeLine )
+#        self.actionRemoveLine = QAction(MainWindow)
+#        self.actionRemoveLine.setObjectName(u'actionRemoveLine')
+#        self.actionRemoveLine.triggered.connect( self.removeLine )
 
         # open projector
         self.actionOpen_projector = QAction(MainWindow)
@@ -63,6 +65,11 @@ class Ui_MainWindow(object):
         self.actionOverlay.setObjectName(u'overlay')
         self.actionOverlay.triggered.connect( self.overlay )
         
+        # set legend size
+        self.actionLegendSize = QAction(MainWindow)
+        self.actionLegendSize.setObjectName(u'legend_size')
+        self.actionLegendSize.triggered.connect( self.legend_size )
+        
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         
@@ -85,6 +92,8 @@ class Ui_MainWindow(object):
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
         self.menubar.setGeometry(QRect(0, 0, 859, 23))
+        self.menuView = QMenu(self.menubar)
+        self.menuView.setObjectName(u"menuView")
         self.menuEdit = QMenu(self.menubar)
         self.menuEdit.setObjectName(u"menuEdit")
         self.menuFile = QMenu(self.menubar)
@@ -96,7 +105,10 @@ class Ui_MainWindow(object):
 
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
-        self.menuEdit.addAction(self.actionRemoveLine)
+        self.menubar.addAction(self.menuView.menuAction())
+
+        self.menuView.addAction(self.actionLegendSize)
+#        self.menuEdit.addAction(self.actionRemoveLine)
         self.menuEdit.addAction(self.actionOpen_projector)
         self.menuEdit.addAction(self.actionOverlay)
         self.menuFile.addAction(self.actionOpen)
@@ -112,7 +124,9 @@ class Ui_MainWindow(object):
         self.actionSave_As.setText(QCoreApplication.translate("MainWindow", u"Save As...", None))
         self.actionOpen.setText(QCoreApplication.translate("MainWindow", u"Open project...", None))
         self.actionOverlay.setText(QCoreApplication.translate("MainWindow", u"Overlay DOS...", None))
-        self.actionRemoveLine.setText(QCoreApplication.translate("MainWindow", u"Remove line...", None))
+#        self.actionRemoveLine.setText(QCoreApplication.translate("MainWindow", u"Remove line...", None))
+        self.actionLegendSize.setText(QCoreApplication.translate("MainWindow", u"Set legend size", None))
+        self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"View", None))
         self.menuEdit.setTitle(QCoreApplication.translate("MainWindow", u"Edit", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
 
@@ -132,23 +146,28 @@ class Ui_MainWindow(object):
         path = self.openDialog.openDirectoryDialog()
         doscar = Doscar.DOSCAR( path )
         self.canvas.axes.plot(doscar.energy, doscar.dos, label='new')
-        self.canvas.axes.legend(loc='best')
+        self.canvas.axes.legend(loc='best', prop={'size' : 20})
         self.canvas.draw()
         self.canvas.axes.autoscale_view()
 
-    def removeLine(self):
+    def legend_size(self):
+        self.legendDialog.exec_()
+
+#    def removeLine(self):
 
 
 
 class App(QMainWindow, Ui_MainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, path=None):
         super(App, self).__init__(parent)
-        intro = Intro.AppIntro()
-        intro.exec_()
         self.openDialog = OpenDialog.AppOpen()
-        path = self.openDialog.openDirectoryDialog()
+        if path is None:
+            intro = Intro.AppIntro()
+            intro.exec_()
+            path = self.openDialog.openDirectoryDialog()
         doscar = Doscar.DOSCAR( path )
         self.setupUi( self, doscar )
         self.projectorDialog = ProjectorGUI.AppProj( doscar, self.canvas )
         self.saveDialog = SaveDialog.AppSave( self.canvas )
+        self.legendDialog = LegendDialog.AppLegend( self.canvas )
 

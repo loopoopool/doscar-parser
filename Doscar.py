@@ -2,14 +2,14 @@ import sys, re, Incar, PlotGUI
 import numpy as np
 from PyQt5.QtWidgets import QApplication
 
-label_ispin1 = [ 's', 'p', 'd']
-label_ispin1_lm = [ 's', 'px', 'py', 'pz', 'dxy', 'dyz', 'dz2', 'dxz', 'dx2' ]
-label_ispin2 = [ 's+', 's-', 'p+', 'p-', 'd+', 'd-' ]
-label_ispin2_lm = [ 's+', 'px+', 'py+', 'pz+', 'dxy+', 'dyz+', 'dz2+', 'dxz+', 'dx2+', 
+label_ispin1 = [ 'all', 's', 'p', 'd']
+label_ispin1_lm = [ 'all', 's', 'px', 'py', 'pz', 'dxy', 'dyz', 'dz2', 'dxz', 'dx2' ]
+label_ispin2 = [ 'all', 's+', 's-', 'p+', 'p-', 'd+', 'd-' ]
+label_ispin2_lm = [ 'all', 's+', 'px+', 'py+', 'pz+', 'dxy+', 'dyz+', 'dz2+', 'dxz+', 'dx2+', 
         's-', 'px-', 'py-', 'pz-', 'dxy-', 'dyz-', 'dz2-', 'dxz-', 'dx2-' ]
-label_ncl = [ 'stot' , 's(mx)', 's(my)', 's(mz)', 'ptot', 'p(mx)', 'p(my)', 'p(mz)', 
+label_ncl = [ 'all', 'stot' , 's(mx)', 's(my)', 's(mz)', 'ptot', 'p(mx)', 'p(my)', 'p(mz)', 
         'dtot', 'd(mx)', 'd(my)', 'd(mz)' ]
-label_ncl_lm = [ 'stot', 's(mx)', 's(my)', 's(mz)', 'pxtot', 'px(mx)', 'px(my)', 'px(mz)', 
+label_ncl_lm = [ 'all', 'stot', 's(mx)', 's(my)', 's(mz)', 'pxtot', 'px(mx)', 'px(my)', 'px(mz)', 
         'pytot', 'py(mx)', 'py(my)', 'py(mz)', 'pztot', 'pz(mx)', 'pz(my)', 'pz(mz)', 
         'dxytot', 'dxy(mx)', 'dxy(my)', 'dxy(mz)', 'dyztot', 'dyz(mx)', 'dyz(my)', 'dyz(mz)',
         'dz2tot', 'dz2(mx)', 'dz2(my)', 'dz2(mz)', 'dxztot', 'dxz(mx)', 'dxz(my)', 'dxz(mz)',
@@ -68,7 +68,7 @@ class DOSCAR:
         pass
 
     def __init__(self, path):
-        incar = Incar.INCAR( path+'/INCAR' )
+        self.incar = Incar.INCAR( path+'/INCAR' )
 #        ispin=0
 #        ncl = parse_yn_bool( input('Non-collinear?(y/n): ') )
 #        if not ncl: ispin = int( input('ISPIN >> ') )
@@ -86,7 +86,7 @@ class DOSCAR:
         counter = 6
         self.energy = np.zeros(self.nedos)
 
-        if ( incar.ispin != 2 ):
+        if ( self.incar.ispin != 2 ):
             self.dos = np.zeros(self.nedos)
             for i in range(self.nedos):
                 self.energy[i], self.dos[i], _ = (float(x) for x in split( doscar[counter+i] ))
@@ -114,15 +114,16 @@ class DOSCAR:
                 counter += 1
 
             # Extract labels
-            lm = incar.lorbit == 11 or incar.lorbit == 1
+            ncol += 1 # add one col for all
+            lm = self.incar.lorbit == 11 or self.incar.lorbit == 1
             global label_ispin1_lm, label_ispin1, label_ispin2_lm, label_ispin2, label_ncl_lm, label_ncl
-            if ( incar.ispin==1 ):
+            if ( self.incar.ispin==1 ):
                 if ( lm ): self.guiLabel = label_ispin1_lm[:ncol] 
                 else: self.guiLabel = label_ispin1[:ncol]
-            elif ( incar.ispin==2 ):
+            elif ( self.incar.ispin==2 ):
                 if ( lm ): self.guiLabel = label_ispin1_lm[:ncol]
                 else: self.guiLabel = label_ispin2[:ncol]
-            elif ( incar.ncl ):
+            elif ( self.incar.ncl ):
                 if ( lm ): 
                     self.guiLabel = label_ncl_lm[:ncol]
                 else: self.guiLabel = label_ncl[:ncol]
@@ -133,10 +134,16 @@ class DOSCAR:
 
     ##### PROJECTOR #####
     def projector(self, atoms, orbitals):
+        m = re.compile(r'm')
         projected = np.zeros(self.nedos)
         for aa in atoms:
+            if len(orbitals) == 1 and orbitals[0] == 'all':
+                if self.incar.ncl:
+                    tmp = [i-1 for i, label in enumerate(self.guiLabel) if not m.search(label) and label != 'all']
+                    for i in tmp:
+                        projected += self.pldos[ aa, :, i ]
             for oo in orbitals:
-                projected += self.pldos[ aa, :, self.label[oo] ]
+                projected += self.pldos[ aa, :, self.label[oo]-1 ]
         return projected
     ############################## 
 

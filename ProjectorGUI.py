@@ -130,7 +130,7 @@ class Ui_Dialog(object):
         mylabel = self.lineEdit.text()
         self.canvas.axes.plot(self.doscar.energy, self.doscar.projector(atomlist, orblist), 
                 color=self.canvas.colors[self.linecounter], label=mylabel)
-        self.canvas.axes.legend(loc='best')
+        self.canvas.axes.legend(loc='best', prop={'size' : 20})
         self.canvas.draw()
         self.lineEdit.clear()
 

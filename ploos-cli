@@ -1,0 +1,10 @@
+#!/bin/bash
+
+ploosdir='/home/cepo/Codes/doscar-parser'
+
+printf "\n**************************************************\n"
+printf "************* DOSCAR-PARSER **********************\n"
+printf "**************************************************\n"
+
+python $ploosdir/launch-cli.py
+
