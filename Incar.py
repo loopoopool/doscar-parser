@@ -14,7 +14,7 @@ class INCAR:
         msoc = soc_re.search( incar )
         
         if mincar: 
-            self.ispin = int( m.group('ispin') )
+            self.ispin = int( mincar.group('ispin') )
             self.ncl = False
         elif mncl:
             self.ispin=-1

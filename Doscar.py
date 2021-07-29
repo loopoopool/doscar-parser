@@ -77,6 +77,7 @@ class DOSCAR:
             doscar = f.readlines()
 
         self.natoms, _, pdos, _ = [int(n) for n in split( doscar[0] )]
+        self.atoms = [str(i) for i in range(1, self.natoms+1)]
         vol, a, b, c, potim = [float(n) for n in split( doscar[1] )]
         tebeg = float( remove_all_whitespace( doscar[2] ) )
         system = remove_all_whitespace( doscar[4] )
@@ -137,13 +138,14 @@ class DOSCAR:
         m = re.compile(r'm')
         projected = np.zeros(self.nedos)
         for aa in atoms:
+            atom_index = int(aa)-1
             if len(orbitals) == 1 and orbitals[0] == 'all':
                 if self.incar.ncl:
                     tmp = [i-1 for i, label in enumerate(self.guiLabel) if not m.search(label) and label != 'all']
                     for i in tmp:
-                        projected += self.pldos[ aa, :, i ]
+                        projected += self.pldos[ atom_index, :, i ]
             for oo in orbitals:
-                projected += self.pldos[ aa, :, self.label[oo]-1 ]
+                projected += self.pldos[ atom_index, :, self.label[oo]-1 ]
         return projected
     ############################## 
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ploosdir='/home/cepo/Codes/doscar-parser'
+ploosdir='//home/cepo/Codes/ploos'
 
 printf "\n**************************************************\n"
 printf "************* DOSCAR-PARSER **********************\n"

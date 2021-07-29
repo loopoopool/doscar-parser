@@ -1,7 +1,7 @@
 #!/bin/bash
 
 current=`pwd`
-sed -i "s|pippo|${current}|" ploos-cli
+sed -i "s|mydir|${current}|" ploos-cli
 printf "\nInstalling ploos...\n\nI need your password to copy some file in /usr/share\n\n"
 
 sudo cp -p ploos-cli /usr/local/bin/.

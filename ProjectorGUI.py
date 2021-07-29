@@ -30,30 +30,35 @@ class Ui_Dialog(object):
 
         self.horizontalLayout.addWidget(self.label)
 
-        self.spinBox = QSpinBox(Dialog)
-        self.spinBox.setObjectName(u"spinBox")
-        self.spinBox.setRange(1, doscar.natoms)
+#        self.spinBox = QSpinBox(Dialog)
+#        self.spinBox.setObjectName(u"spinBox")
+#        self.spinBox.setRange(1, doscar.natoms)
+#
+#        self.horizontalLayout.addWidget(self.spinBox)
+#
+#        self.horizontalSpacer = QSpacerItem(60, 40, QSizePolicy.Preferred, QSizePolicy.Minimum)
+#
+#        self.horizontalLayout.addItem(self.horizontalSpacer)
+#
+#        self.label_2 = QLabel(Dialog)
+#        self.label_2.setObjectName(u"label_2")
+#
+#        self.horizontalLayout.addWidget(self.label_2)
+#
+#        self.spinBox_2 = QSpinBox(Dialog)
+#        self.spinBox_2.setObjectName(u"spinBox_2")
+#        self.spinBox_2.setRange(1, doscar.natoms)
+#
+#        self.horizontalLayout.addWidget(self.spinBox_2)
 
-        self.horizontalLayout.addWidget(self.spinBox)
 
-        self.horizontalSpacer = QSpacerItem(60, 40, QSizePolicy.Preferred, QSizePolicy.Minimum)
+#        self.verticalLayout_2.addLayout(self.horizontalLayout)
 
-        self.horizontalLayout.addItem(self.horizontalSpacer)
+        self.atoms = checkableComboBox.CheckableComboBox(Dialog) 
+        self.atoms.addItems( doscar.atoms )
 
-        self.label_2 = QLabel(Dialog)
-        self.label_2.setObjectName(u"label_2")
-
-        self.horizontalLayout.addWidget(self.label_2)
-
-        self.spinBox_2 = QSpinBox(Dialog)
-        self.spinBox_2.setObjectName(u"spinBox_2")
-        self.spinBox_2.setRange(1, doscar.natoms)
-
-        self.horizontalLayout.addWidget(self.spinBox_2)
-
-
-        self.verticalLayout_2.addLayout(self.horizontalLayout)
-
+        self.verticalLayout_2.addWidget(self.atoms)
+        
         self.label_4 = QLabel(Dialog)
         self.label_4.setObjectName(u"label_4")
 
@@ -113,8 +118,8 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         Dialog.setWindowTitle(QCoreApplication.translate("Projector", u"Projector", None))
         self.label_3.setText(QCoreApplication.translate("Dialog", u"Project onto atoms:", None))
-        self.label.setText(QCoreApplication.translate("Dialog", u"from:", None))
-        self.label_2.setText(QCoreApplication.translate("Dialog", u"to:", None))
+#        self.label.setText(QCoreApplication.translate("Dialog", u"from:", None))
+#        self.label_2.setText(QCoreApplication.translate("Dialog", u"to:", None))
         self.label_4.setText(QCoreApplication.translate("Dialog", u"Project onto orbitals", None))
         self.label_5.setText(QCoreApplication.translate("Dialog", u"Line label:", None))
         self.pushButton.setText(QCoreApplication.translate("Dialog", u"Add line", None))
@@ -125,7 +130,8 @@ class Ui_Dialog(object):
 
     def clickAddLine(self):
         self.linecounter += 1
-        atomlist = np.arange( self.spinBox.value()-1, self.spinBox_2.value() )
+#        atomlist = np.arange( self.spinBox.value()-1, self.spinBox_2.value() )
+        atomlist = self.atoms.currentData()
         orblist = self.orbitals.currentData()
         mylabel = self.lineEdit.text()
         self.canvas.axes.plot(self.doscar.energy, self.doscar.projector(atomlist, orblist), 
