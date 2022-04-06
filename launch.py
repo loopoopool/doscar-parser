@@ -1,8 +1,0 @@
-import sys
-import Doscar, PlotGUI
-from PyQt5.QtWidgets import QApplication
-
-app = QApplication(sys.argv)
-window = PlotGUI.App()
-window.show()
-app.exec_()
