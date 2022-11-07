@@ -18,10 +18,22 @@ class MplCanvas(FigureCanvasQTAgg):
         self.axes[0].set_xlabel('$E-E_{F}$ (eV)', size=30)
         self.axes[0].set_xlim(min(doscar.energy), max(doscar.energy))
         self.axes[0].set_ylabel('states ($eV^{-1}$)', size=30)
-        self.axes[0].set_ylim(0, np.average(doscar.dos))
         self.axes[0].tick_params(labelsize=25)
-        self.axes[0].plot(doscar.energy, doscar.dos, label='total', color='lightgrey')
-        self.axes[0].fill_between(doscar.energy, np.zeros(doscar.energy.shape), doscar.dos, color='lightgrey', alpha=0.6)
+        if (doscar.incar.ispin != 2):
+            self.axes[0].set_ylim(0, np.average(doscar.dos))
+            self.axes[0].plot(doscar.energy, doscar.dos, label='total', color='lightgrey')
+            self.axes[0].fill_between(doscar.energy, np.zeros(doscar.energy.shape), doscar.dos, color='lightgrey', alpha=0.6)
+        else:
+            self.axes[0].set_ylim(0, np.average(doscar.dos_up))
+            self.axes[0].plot(doscar.energy, doscar.dos_up, label='up', color='lightgrey')
+            self.axes[0].plot(doscar.energy, doscar.dos_down, label='down',
+                    color='lightblue')
+            self.axes[0].fill_between(doscar.energy,
+                    np.zeros(doscar.energy.shape), doscar.dos_up, color='lightgrey', alpha=0.6)
+            self.axes[0].fill_between(doscar.energy,
+                    np.zeros(doscar.energy.shape), doscar.dos_down,
+                    color='lightblue', alpha=0.6)
+
         self.axes[0].axvline(x=0.0, color='black', label='fermi')
         self.axes[0].legend(loc='upper right', prop={'size' : 20})
         

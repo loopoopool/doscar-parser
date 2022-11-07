@@ -119,7 +119,7 @@ class DOSCAR:
                 if ( lm ): self.guiLabel = label_ispin1_lm[:ncol] 
                 else: self.guiLabel = label_ispin1[:ncol]
             elif ( self.incar.ispin==2 ):
-                if ( lm ): self.guiLabel = label_ispin1_lm[:ncol]
+                if ( lm ): self.guiLabel = label_ispin2_lm[:ncol]
                 else: self.guiLabel = label_ispin2[:ncol]
             elif ( self.incar.ncl ):
                 if ( lm ): 

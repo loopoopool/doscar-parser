@@ -1,5 +1,5 @@
 import sys
-import Doscar, PlotGUI
+from ploos import Doscar, PlotGUI
 from PyQt5.QtWidgets import QApplication
 
 app = QApplication(sys.argv)

@@ -4,18 +4,15 @@ import itertools
 import numpy as np
 from ploos.Parser import *
 
-eps = 1e-3
-
-
 def pbc(x):
+    eps = 1e-4
     for i in range(len(x)):
-        if x[i] > 1.0:
+        if x[i] - 1.0 > eps:
             x[i] -= 1.0
-        elif x[i] < 0.0: x[i] += 1.0
+        elif x[i] < -eps: x[i] += 1.0
         if abs(x[i]-1) < eps:
             x[i] = 0.0
     return x
-
 
 def octa(x, os):
     for i, xi in enumerate(x):
@@ -24,15 +21,14 @@ def octa(x, os):
         elif xi - os[i] < -0.5: x[i] += 1.0
     return x
 
-
-class POSCAR:
+class POSCAR(object):
     def __init__(self, filename):
         with open(filename, 'r') as f:
             data = f.readlines()
         self.name = data[0]
         self.scalingFactor = float(remove_all_whitespace(data[1]))
         self.ucMatrix = self.scalingFactor * \
-            np.array([extract_coord(line) for line in data[2:5]])
+            np.array([extract_coord(line)[0] for line in data[2:5]])
         self.atomsLabel = split(whitespace_to_semicol(data[5]))
         self.atomsNumber = [int(x)
                                 for x in split(whitespace_to_semicol(data[6]))]
@@ -48,13 +44,31 @@ class POSCAR:
         self.direct = (self.coorType == 'Direct' or self.coorType == 'direct' or
                    self.coorType == 'D' or self.coorType == 'd')
         index += 1
-        if self.direct:
-            self.directMatrix = np.array([extract_coord(line) for line in data[index:index+self.ntot]])
-            self.cartesianMatrix = np.matmul(self.directMatrix, self.ucMatrix)
+        self.SDflags = []
+        tmpc_array = np.zeros( (self.ntot, 3) )
+        if self.selectiveDynamicsEnabled:
+            for i, line in enumerate(data[index:index+self.ntot]):
+                tmpc, tmpf = extract_coord(line)
+                tmpc_array[i] = tmpc
+                self.SDflags.append( tmpf )
         else:
-            self.cartesianMatrix = np.array([ extract_coord( line ) for line in data[index:index+self.ntot] ] )
+            tmpc_array = np.array([extract_coord(line)[0] for line in data[index:index+self.ntot]])
+        if self.direct:
+            self.directMatrix = tmpc_array
+            self.cartesianMatrix = np.matmul(tmpc_array, self.ucMatrix)
+        else:
+            self.cartesianMatrix = tmpc_array
+            self.directMatrix = np.matmul(tmpc_array, np.linalg.inv(self.ucMatrix))
 
-    def write_to_file(self, coordinate, filename):
+    def _update_cartesianMatrix(self):
+        tmp = np.array( [pbc(x) for x in self.directMatrix] )
+        self.cartesianMatrix = np.matmul(tmp, self.ucMatrix)
+    
+    def _update_directMatrix(self):
+        tmp = np.matmul(self.cartesianMatrix, np.linalg.inv(self.ucMatrix))
+        self.directMatrix = np.array( [pbc(x) for x in tmp] )
+
+    def write_to_file(self, filename, mode='D'):
         data = [self.name ]
         data.append(str( self.scalingFactor ) + '\n' )
         for i in range(np.size( self.ucMatrix, 0 ) ):
@@ -69,46 +83,168 @@ class POSCAR:
         data.append( labels + '\n' )
         if self.SelectiveDynamics :
             data.append( 'Selective Dynamics\n' )
-        data.append( self.coorType + '\n' )
-        if np.size(coordinate, 0 ) != self.ntot:
-            raise Exception('Wrong number of atoms.')
-        if np.size(coordinate, 1 ) != 3:
-            raise Exception('Wrong number of coordinates.')
-        for i in range(self.ntot ):
-            data.append( '{0:>13.11f}  {1:>13.11f}  {2:>13.11f}\n'.format(coordinate[i, 0], coordinate[i,1], coordinate[i,2]) )
+        data.append( mode + '\n' )
+        tmp = []
+        if (mode=='D'):
+            self._update_directMatrix()
+            for x, f in zip(self.directMatrix, self.SDflags):
+                tmp.append( (x[0], x[1], x[2], f[0], f[1], f[2]) )
+        elif (mode=='C'):
+            self._update_cartesianMatrix()
+            for x, f in zip(self.cartesianMatrix, self.SDflags):
+                tmp.append( (x[0], x[1], x[2], f[0], f[1], f[2]) )
+        else:
+            raise Exception('Wrong mode.')
+        
+        for x in tmp:
+            tmp_str = '  {0:>13.11f}  {1:>13.11f}  {2:>13.11f} {3:} {4:} {5:}\n'
+            data.append( tmp_str.format(x[0], x[1], x[2], x[3], x[4], x[5]) )
         with open(filename, 'w') as f:
-            f.writelines(data )
+            f.writelines(data)
+
+    def setCartesianCoordinates(self, atomNumber, vector):
+        self.cartesianMatrix[atomNumber-1] = vector
+        self._update_directMatrix()
 
     def getCartesianCoordinates(self, atomNumber):
-        return self.cartesianMatrix[atomNumber-1]
+        tmp = np.array( [x for x in self.cartesianMatrix[atomNumber-1]] )
+        return tmp
 
     def getDirection(self, atom1, atom2):
         d = self.cartesianMatrix[atom2-1] - self.cartesianMatrix[atom1-1]
         return d/np.linalg.norm(d)
 
+#    def getBondLength(self, atom1, atom2):
+#        # prepare c1
+#        c1 = self.cartesianMatrix[atom1-1]
+#        print(c1)
+#        tmp = np.dstack((c1,c1))
+#        c1p = pbc(self.directMatrix[atom1-1]) @ self.ucMatrix
+#        print(c1p)
+#        tmp2 = np.dstack((c1p,c1p))
+#        c1 = np.dstack((tmp,tmp2)).reshape((3,2,2))
+#        # prepare c2
+#        c2 = self.cartesianMatrix[atom2-1]
+#        tmp = np.dstack((c2,c2))
+#        c2p = pbc(self.directMatrix[atom2-1]) @ self.ucMatrix
+#        tmp2 = np.dstack((c2p,c2p))
+#        c2 = np.dstack((tmp,tmp2)).reshape((3,2,2))
+#        # calculate
+#        tmp = c1 - np.transpose(c2, axes=(0,2,1))
+#        tmp = tmp.reshape((3,4))
+#        tmp2 = np.array( [np.array([x, y, z]) for x in tmp[0] for y in tmp[1]
+#            for z in tmp[2]]  )
+#        tmp = np.array( [np.linalg.norm(x) for x in tmp2] )
+#        print(tmp)
+#        return np.min(tmp)
+
+#    def _nn_helper(self, tmp, tmp2, cooArr):
+#        x = np.append(cooArr, tmp.reshape((1,3)), axis=0)
+#        y = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+#        return x, y
+
     def getBondLength(self, atom1, atom2):
         c1 = self.cartesianMatrix[atom1-1]
         c2 = self.cartesianMatrix[atom2-1]
-        d = np.array([min( [abs(c2[i] - c1[i]), abs(c2[i] - c1[i] -
-                                                     np.linalg.norm(self.ucMatrix[i])), abs(c2[i] - c1[i] +
-                                                   np.linalg.norm(self.ucMatrix[i]))]) for i in range(3)] )
-        return np.linalg.norm(d)
+        tmp = c1-c2
+        tmp2 = tmp.reshape((1,3))
+        for lv in self.ucMatrix:
+            tmp = c1-c2-lv
+            tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+            tmp = c1-c2+lv
+            tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+        for lv in self.ucMatrix:
+            for lv1 in self.ucMatrix:
+                tmp = c1-c2-lv-lv1
+                tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                tmp = c1-c2-lv+lv1
+                tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                tmp = c1-c2+lv+lv1
+                tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                tmp = c1-c2+lv-lv1
+                tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+        for lv in self.ucMatrix:
+            for lv1 in self.ucMatrix:
+                for lv2 in self.ucMatrix:
+                    tmp = c1-c2-lv-lv1-lv2
+                    tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                    tmp = c1-c2-lv-lv1+lv2
+                    tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                    tmp = c1-c2-lv+lv1-lv2
+                    tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                    tmp = c1-c2-lv+lv1+lv2
+                    tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                    tmp = c1-c2+lv+lv1-lv2
+                    tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                    tmp = c1-c2+lv+lv1+lv2
+                    tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                    tmp = c1-c2+lv-lv1-lv2
+                    tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+                    tmp = c1-c2+lv-lv1+lv2
+                    tmp2 = np.append(tmp2, tmp.reshape((1,3)), axis=0)
+        tmp = np.array( [np.linalg.norm(x) for x in tmp2] )
+        return np.min(tmp), tmp2[np.argmin(tmp)]
+
+############ old ##################
+#    def getBondLength(self, atom1, atom2):
+#        c1 = self.cartesianMatrix[atom1-1]
+#        c2 = self.cartesianMatrix[atom2-1]
+#        d = np.array([min( [abs(c2[i] - c1[i]), abs(c2[i] - c1[i] -
+#                                                     np.linalg.norm(self.ucMatrix[i])), abs(c2[i] - c1[i] +
+#                                                   np.linalg.norm(self.ucMatrix[i]))]) for i in range(3)] )
+#        return np.linalg.norm(d)
+#####################################
+
+    def getAngle(self, at1, at2, at3):
+        vref = self.cartesianMatrix[at2-1]
+        v1 = self.getBondLength(at1, at2)[1] - vref
+        v1 /= np.linalg.norm(v1)
+        v2 = self.getBondLength(at3, at2)[1] - vref
+        v2 /= np.linalg.norm(v2)
+        return 180./np.pi*np.arccos(np.dot(v1,v2))
 
     def getNN(self, atom, num):
-        d = {i+1: self.getBondLength(i+1, atom) for i in range(self.ntot)}
+        d = {i+1: self.getBondLength(i+1, atom)[0] for i in range(self.ntot)}
         d = {k: v for k, v in sorted(d.items(), key=lambda item: item[1])}
         return dict(itertools.islice(d.items(), 1, num+1))
 
     def octahedron(self, atom):
         nn = self.getNN(atom, 6)
-        print(nn)
-        c1 = pbc(self.directMatrix[atom-1])
+#        print(nn)
+#        c1 = pbc(self.directMatrix[atom-1])
         ordered_nn = {}
         for nnkey in nn:
-            c2 = octa(pbc(self.directMatrix[nnkey-1]), c1)
-            d = c2 - c1
-            print(d)
-            d /= np.linalg.norm(d)
+            d = self.getBondLength(nnkey, atom)[1]
+#            c2 = octa(pbc(self.directMatrix[nnkey-1]), c1)
+#            d = c2 - c1
+#            print(d)
+#            d /= np.linalg.norm(d)
+            eps = 0.1*np.linalg.norm(d)
+            if d[0] > 0. and d[1] > 0. and abs(d[2]) < eps:
+                ordered_nn.update({1: nnkey})
+            elif d[0] < 0. and d[1] > 0. and abs(d[2]) < eps:
+                ordered_nn.update({2: nnkey})
+            elif d[0] < 0. and d[1] < 0. and abs(d[2]) < eps:
+                ordered_nn.update({4: nnkey})
+            elif d[0] > 0. and d[1] < 0. and abs(d[2]) < eps:
+                ordered_nn.update({5: nnkey})
+            elif d[2] > 0.:
+                ordered_nn.update({3: nnkey})
+            elif d[2] < 0.:
+                ordered_nn.update({6: nnkey})
+        ordered_nn = {k: v for k, v in sorted(ordered_nn.items(), key=lambda item: item[0])}
+        return [ordered_nn[key] for key in ordered_nn]
+    
+    def octahedron_cubic(self, atom):
+        nn = self.getNN(atom, 6)
+        ordered_nn = {}
+        for nnkey in nn:
+            d = self.getBondLength(nnkey, atom)[1]
+#            c2 = octa(pbc(self.directMatrix[nnkey-1]), c1)
+#            d = c2 - c1
+#            print(d)
+#            d /= np.linalg.norm(d)
+            eps = 0.1*np.linalg.norm(d)
             if d[0] > 0. and abs(d[1]) < eps and abs(d[2]) < eps:
                 ordered_nn.update({1: nnkey})
             elif abs(d[0]) < eps and d[1] > 0. and abs(d[2]) < eps:
@@ -121,18 +257,5 @@ class POSCAR:
                 ordered_nn.update({3: nnkey})
             elif d[2] < 0.:
                 ordered_nn.update({6: nnkey})
-                # rotated cell
-#            if d[0] > 0. and d[1] > 0. and abs(d[2]) < eps:
-#                ordered_nn.update({1: nnkey})
-#            elif d[0] < 0. and d[1] > 0. and abs(d[2]) < eps:
-#                ordered_nn.update({2: nnkey})
-#            elif d[0] < 0. and d[1] < 0. and abs(d[2]) < eps:
-#                ordered_nn.update({4: nnkey})
-#            elif d[0] > 0. and d[1] < 0. and abs(d[2]) < eps:
-#                ordered_nn.update({5: nnkey})
-#            elif d[2] > 0.:
-#                ordered_nn.update({3: nnkey})
-#            elif d[2] < 0.:
-#                ordered_nn.update({6: nnkey})
         ordered_nn = {k: v for k, v in sorted(ordered_nn.items(), key=lambda item: item[0])}
         return [ordered_nn[key] for key in ordered_nn]

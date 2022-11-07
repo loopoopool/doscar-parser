@@ -16,7 +16,7 @@ class EIGENVAL:
         self.k = np.zeros((nkpts,3))
         self.o = np.zeros((nkpts,nbands))
         for i in range(nkpts):
-            self.k[i] = extract_coord(data[off+i*(2+nbands)])
+            self.k[i] = extract_coord(data[off+i*(2+nbands)])[0]
             for j in range(1,nbands+1):
                 tmp = split(data[off+i*(2+nbands)+j])
                 self.e[i,j-1] = float(tmp[1])
