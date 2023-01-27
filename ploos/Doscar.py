@@ -15,7 +15,12 @@ label_ncl_lm = [ 'all', 'stot', 's(mx)', 's(my)', 's(mz)', 'pxtot', 'px(mx)', 'p
         'pytot', 'py(mx)', 'py(my)', 'py(mz)', 'pztot', 'pz(mx)', 'pz(my)', 'pz(mz)', 
         'dxytot', 'dxy(mx)', 'dxy(my)', 'dxy(mz)', 'dyztot', 'dyz(mx)', 'dyz(my)', 'dyz(mz)',
         'dz2tot', 'dz2(mx)', 'dz2(my)', 'dz2(mz)', 'dxztot', 'dxz(mx)', 'dxz(my)', 'dxz(mz)',
-        'dx2tot', 'dx2(mx)', 'dx2(my)', 'dx2(mz)' ]
+        'dx2tot', 'dx2(mx)', 'dx2(my)', 'dx2(mz)', 'fy3x2tot', 'fy3x2(mx)',
+        'fy3x2(my)', 'fy3x2(mz)', 'fxyztot', 'fxyz(mx)', 'fxyz(my)', 'fxyz(mz)',
+        'fyz2tot', 'fyz2(mx)', 'fyz(my)', 'fyz(mz)', 'fz3tot', 'fz3(mx)',
+        'fz3(my)', 'fz3(mz)', 'fxz2tot', 'fxz2(mx)', 'fxz2(my)', 'fxz2(mz)',
+        'fzx2tot', 'fzx2(mx)', 'fzx2(my)', 'fzx2(mz)', 'fx3tot', 'fx3(mx)',
+        'fx3(my)', 'fx3(mz)' ]
 
 
 # discarding energy column
@@ -63,10 +68,21 @@ def read_projected_dos(raw_doscar, nedos, natoms):
     # skip header
     counter += 1
     ncol = len( split( raw_doscar[nedos+7] ) ) - 1 # remove one col for energies
+    one_more_line = False
+    if ( ncol == 36 ): 
+        one_more_line=True
+        ncol += 28
     pldos = np.empty( (natoms, nedos, ncol), dtype=float )
     for i in range( natoms ):
         for j in range( nedos ):
-            pldos[i,j] = np.array( [float(x) for x in split( raw_doscar[counter] )[1:] ] )
+            tmp = np.array( [float(x) for x in split( raw_doscar[counter] )[1:] ] )
+            if ( one_more_line ):
+                counter += 1
+                tmp1 = np.array( [float(x) for x in split( raw_doscar[counter] ) ] )
+                pldos[i,j] = np.concatenate((tmp, tmp1))
+            else:
+                pldos[i,j] = tmp
+
             counter += 1
         # skip header
         counter += 1

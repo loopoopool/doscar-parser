@@ -27,8 +27,8 @@ class POSCAR(object):
             data = f.readlines()
         self.name = data[0]
         self.scalingFactor = float(remove_all_whitespace(data[1]))
-        self.ucMatrix = self.scalingFactor * \
-            np.array([extract_coord(line)[0] for line in data[2:5]])
+        self.uc_print = np.array([extract_coord(line)[0] for line in data[2:5]])
+        self.ucMatrix = self.scalingFactor * self.uc_print
         self.atomsLabel = split(whitespace_to_semicol(data[5]))
         self.atomsNumber = [int(x)
                                 for x in split(whitespace_to_semicol(data[6]))]
@@ -44,6 +44,9 @@ class POSCAR(object):
         self.direct = (self.coorType == 'Direct' or self.coorType == 'direct' or
                    self.coorType == 'D' or self.coorType == 'd')
         index += 1
+        self.header = ''
+        for i in range(index): self.header += data[i]
+        self.headerLines = [x for x in data[:index]]
         self.SDflags = []
         tmpc_array = np.zeros( (self.ntot, 3) )
         if self.selectiveDynamicsEnabled:
@@ -68,11 +71,12 @@ class POSCAR(object):
         tmp = np.matmul(self.cartesianMatrix, np.linalg.inv(self.ucMatrix))
         self.directMatrix = np.array( [pbc(x) for x in tmp] )
 
-    def write_to_file(self, filename, mode='D'):
+    def write_to_file(self, filename, mode='D', digits=11):
         data = [self.name ]
         data.append(str( self.scalingFactor ) + '\n' )
-        for i in range(np.size( self.ucMatrix, 0 ) ):
-            data.append( '    {0:>13.11f}  {1:>13.11f}  {2:>13.11f}\n'.format(self.ucMatrix[i, 0], self.ucMatrix[i,1], self.ucMatrix[i,2]) )
+        for i in range(np.size( self.uc_print, 0 ) ):
+            data.append( '    {0:>13.11f}  {1:>13.11f} {2:>13.11f}\n'.format(self.uc_print[i, 0],
+                                              self.uc_print[i,1], self.uc_print[i,2]) )
         labels = '   '
         for lab in self.atomsLabel:
             labels += lab + '  '
@@ -87,11 +91,11 @@ class POSCAR(object):
         tmp = []
         if (mode=='D'):
             self._update_directMatrix()
-            for x, f in zip(self.directMatrix, self.SDflags):
+            for x, f in zip(np.round(self.directMatrix, digits), self.SDflags):
                 tmp.append( (x[0], x[1], x[2], f[0], f[1], f[2]) )
         elif (mode=='C'):
             self._update_cartesianMatrix()
-            for x, f in zip(self.cartesianMatrix, self.SDflags):
+            for x, f in zip(np.round(self.cartesianMatrix, digits), self.SDflags):
                 tmp.append( (x[0], x[1], x[2], f[0], f[1], f[2]) )
         else:
             raise Exception('Wrong mode.')
@@ -240,6 +244,7 @@ class POSCAR(object):
         ordered_nn = {}
         for nnkey in nn:
             d = self.getBondLength(nnkey, atom)[1]
+            print(d)
 #            c2 = octa(pbc(self.directMatrix[nnkey-1]), c1)
 #            d = c2 - c1
 #            print(d)
@@ -259,3 +264,47 @@ class POSCAR(object):
                 ordered_nn.update({6: nnkey})
         ordered_nn = {k: v for k, v in sorted(ordered_nn.items(), key=lambda item: item[0])}
         return [ordered_nn[key] for key in ordered_nn]
+    
+    def octahedron_general(self, atom):
+        nn = self.getNN(atom, 6)
+        ordered_nn = {}
+        for nnkey in nn:
+            d = self.getBondLength(nnkey, atom)[1]
+            print(d)
+#            c2 = octa(pbc(self.directMatrix[nnkey-1]), c1)
+#            d = c2 - c1
+#            print(d)
+#            d /= np.linalg.norm(d)
+            eps = 0.1*np.linalg.norm(d)
+            if d[0] > 0. and abs(d[1]) < eps and abs(d[2]) < eps:
+                ordered_nn.update({1: nnkey})
+            elif abs(d[0]) < eps and d[1] > 0. and abs(d[2]) < eps:
+                ordered_nn.update({2: nnkey})
+            elif d[0] < 0. and abs(d[1]) < eps and abs(d[2]) < eps:
+                ordered_nn.update({4: nnkey})
+            elif abs(d[0]) < eps and d[1] < 0. and abs(d[2]) < eps:
+                ordered_nn.update({5: nnkey})
+            elif d[2] > 0.:
+                ordered_nn.update({3: nnkey})
+            elif d[2] < 0.:
+                ordered_nn.update({6: nnkey})
+        ordered_nn = {k: v for k, v in sorted(ordered_nn.items(), key=lambda item: item[0])}
+        return [ordered_nn[key] for key in ordered_nn]
+
+    def isAtBorder(self, x, tol):
+        if abs(x) < tol or abs(x-1) < tol: return 'F'
+        else: return 'T'
+
+    def selectiveDynamicsConstraintBorders(self, outfile):
+        flags = [ [self.isAtBorder(x, 1e-5) for x in atom] for atom in self.directMatrix ]
+        if self.SelectiveDynamics: 
+            text = self.header
+        else:
+            text = ''
+            for i in range(len(self.headerLines)-1): 
+                text += self.headerLines[i]
+            text += 'Selective Dynamics\n' + self.headerLines[-1]
+        for atom, flag in zip(self.directMatrix, flags):
+            text += '  %.11f  %.11f  %.11f  %c  %c  %c\n' % (atom[0], atom[1], atom[2], flag[0], flag[1], flag[2])
+        with open(outfile, 'w') as f: f.write(text)
+
