@@ -244,7 +244,6 @@ class POSCAR(object):
         ordered_nn = {}
         for nnkey in nn:
             d = self.getBondLength(nnkey, atom)[1]
-            print(d)
 #            c2 = octa(pbc(self.directMatrix[nnkey-1]), c1)
 #            d = c2 - c1
 #            print(d)
@@ -265,29 +264,44 @@ class POSCAR(object):
         ordered_nn = {k: v for k, v in sorted(ordered_nn.items(), key=lambda item: item[0])}
         return [ordered_nn[key] for key in ordered_nn]
     
-    def octahedron_general(self, atom):
+    def octahedron_general(self, atom, x=np.array([1,0,0]), y=np.array([0,1,0]),
+                           z=np.array([0,0,1])):
         nn = self.getNN(atom, 6)
         ordered_nn = {}
-        for nnkey in nn:
-            d = self.getBondLength(nnkey, atom)[1]
-            print(d)
-#            c2 = octa(pbc(self.directMatrix[nnkey-1]), c1)
-#            d = c2 - c1
-#            print(d)
-#            d /= np.linalg.norm(d)
-            eps = 0.1*np.linalg.norm(d)
-            if d[0] > 0. and abs(d[1]) < eps and abs(d[2]) < eps:
-                ordered_nn.update({1: nnkey})
-            elif abs(d[0]) < eps and d[1] > 0. and abs(d[2]) < eps:
-                ordered_nn.update({2: nnkey})
-            elif d[0] < 0. and abs(d[1]) < eps and abs(d[2]) < eps:
-                ordered_nn.update({4: nnkey})
-            elif abs(d[0]) < eps and d[1] < 0. and abs(d[2]) < eps:
-                ordered_nn.update({5: nnkey})
-            elif d[2] > 0.:
-                ordered_nn.update({3: nnkey})
-            elif d[2] < 0.:
-                ordered_nn.update({6: nnkey})
+        d = { nnkey : self.getBondLength(nnkey, atom)[1] for nnkey in nn }
+        d_from_x = { nnkey : np.linalg.norm( d[nnkey] - x *
+                        np.inner(d[nnkey], x)) for nnkey in nn }
+        d_from_x = [key for key, v in sorted(d_from_x.items(), key = lambda it :
+                                             it[1])[:4]]
+        
+        d_from_y = { nnkey : np.linalg.norm( d[nnkey] - y *
+                        np.inner(d[nnkey], y)) for nnkey in nn }
+        d_from_y = [key for key, v in sorted(d_from_y.items(), key = lambda it :
+                                             it[1])[:4]]
+        
+        d_from_z = { nnkey : np.linalg.norm( d[nnkey] - z *
+                        np.inner(d[nnkey], z)) for nnkey in nn }
+        d_from_z = [key for key, v in sorted(d_from_z.items(), key = lambda it :
+                                             it[1])[:2]]
+
+        for nnkey in d_from_x:
+            if ( np.inner(d[nnkey], x) > 0.0 and np.inner(d[nnkey], y) >= 0.0):
+                ordered_nn.update( {1: nnkey} )
+            elif( np.inner(d[nnkey], x) < 0.0 and np.inner(d[nnkey], y) <= 0.0):
+                ordered_nn.update( {4: nnkey} )
+        
+        for nnkey in d_from_y:
+            if ( np.inner(d[nnkey], y) > 0.0 and np.inner(d[nnkey], x) <= 0.0):
+                ordered_nn.update( {2: nnkey} )
+            elif( np.inner(d[nnkey], y) < 0.0 and np.inner(d[nnkey], x) >= 0.0):
+                ordered_nn.update( {5: nnkey} )
+        
+        for nnkey in d_from_z:
+            if ( np.inner(d[nnkey], z) > 0.0 ):
+                ordered_nn.update( {3: nnkey} )
+            else:
+                ordered_nn.update( {6: nnkey} )
+        
         ordered_nn = {k: v for k, v in sorted(ordered_nn.items(), key=lambda item: item[0])}
         return [ordered_nn[key] for key in ordered_nn]
 

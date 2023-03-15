@@ -7,8 +7,9 @@ from PyQt5.QtWidgets import QApplication
 label_ispin1 = [ 'all', 's', 'p', 'd']
 label_ispin1_lm = [ 'all', 's', 'px', 'py', 'pz', 'dxy', 'dyz', 'dz2', 'dxz', 'dx2' ]
 label_ispin2 = [ 'all', 's+', 's-', 'p+', 'p-', 'd+', 'd-' ]
-label_ispin2_lm = [ 'all', 's+', 'px+', 'py+', 'pz+', 'dxy+', 'dyz+', 'dz2+', 'dxz+', 'dx2+', 
-        's-', 'px-', 'py-', 'pz-', 'dxy-', 'dyz-', 'dz2-', 'dxz-', 'dx2-' ]
+label_ispin2_lm = [ 'all', 's+', 's-', 'px+', 'px-', 'py+', 'py-', 'pz+', 'pz-',
+                   'dxy+', 'dxy-', 'dyz+', 'dyz-', 'dz2+', 'dz2-', 'dxz+',
+                   'dxz-', 'dx2+', 'dx2-' ] 
 label_ncl = [ 'all', 'stot' , 's(mx)', 's(my)', 's(mz)', 'ptot', 'p(mx)', 'p(my)', 'p(mz)', 
         'dtot', 'd(mx)', 'd(my)', 'd(mz)' ]
 label_ncl_lm = [ 'all', 'stot', 's(mx)', 's(my)', 's(mz)', 'pxtot', 'px(mx)', 'px(my)', 'px(mz)', 
@@ -69,9 +70,9 @@ def read_projected_dos(raw_doscar, nedos, natoms):
     counter += 1
     ncol = len( split( raw_doscar[nedos+7] ) ) - 1 # remove one col for energies
     one_more_line = False
-    if ( ncol == 36 ): 
-        one_more_line=True
-        ncol += 28
+#    if ( ncol == 36 ): 
+#        one_more_line=True
+#        ncol += 28
     pldos = np.empty( (natoms, nedos, ncol), dtype=float )
     for i in range( natoms ):
         for j in range( nedos ):
