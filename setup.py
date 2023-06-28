@@ -9,7 +9,7 @@ setup(
     author_email='lorenzo.celiberti@protonmail.com',
     license='BSD 2-clause',
     packages=['ploos'],
-    install_requires=['matplotlib==3.4.3',
+    install_requires=['matplotlib',
                       'numpy',                     
                       'PyQt5'],
 )

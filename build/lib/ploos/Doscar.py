@@ -5,17 +5,26 @@ import numpy as np
 from PyQt5.QtWidgets import QApplication
 
 label_ispin1 = [ 'all', 's', 'p', 'd']
-label_ispin1_lm = [ 'all', 's', 'px', 'py', 'pz', 'dxy', 'dyz', 'dz2', 'dxz', 'dx2' ]
+label_ispin1_lm = [ 'all', 's', 'px', 'py', 'pz', 'dxy', 'dyz', 'dz2', 'dxz',
+                   'dx2', 'fy3x2', 'fxyz', 'fyz2', 'fz3', 'fxz2', 'fzx2', 'fx3' ]
 label_ispin2 = [ 'all', 's+', 's-', 'p+', 'p-', 'd+', 'd-' ]
-label_ispin2_lm = [ 'all', 's+', 'px+', 'py+', 'pz+', 'dxy+', 'dyz+', 'dz2+', 'dxz+', 'dx2+', 
-        's-', 'px-', 'py-', 'pz-', 'dxy-', 'dyz-', 'dz2-', 'dxz-', 'dx2-' ]
+label_ispin2_lm = [ 'all', 's+', 's-', 'px+', 'px-', 'py+', 'py-', 'pz+', 'pz-',
+                   'dxy+', 'dxy-', 'dyz+', 'dyz-', 'dz2+', 'dz2-', 'dxz+',
+                   'dxz-', 'dx2+', 'dx2-', 'fy3x2+', 'fy3x2-', 'fxyz+', 'fxyz-',
+                   'fyz2+', 'fyz2-', 'fz3+', 'fz3-', 'fxz2+', 'fxz2-', 'fzx2+',
+                   'fzx2-', 'fx3+', 'fx3-' ] 
 label_ncl = [ 'all', 'stot' , 's(mx)', 's(my)', 's(mz)', 'ptot', 'p(mx)', 'p(my)', 'p(mz)', 
         'dtot', 'd(mx)', 'd(my)', 'd(mz)' ]
 label_ncl_lm = [ 'all', 'stot', 's(mx)', 's(my)', 's(mz)', 'pxtot', 'px(mx)', 'px(my)', 'px(mz)', 
         'pytot', 'py(mx)', 'py(my)', 'py(mz)', 'pztot', 'pz(mx)', 'pz(my)', 'pz(mz)', 
         'dxytot', 'dxy(mx)', 'dxy(my)', 'dxy(mz)', 'dyztot', 'dyz(mx)', 'dyz(my)', 'dyz(mz)',
         'dz2tot', 'dz2(mx)', 'dz2(my)', 'dz2(mz)', 'dxztot', 'dxz(mx)', 'dxz(my)', 'dxz(mz)',
-        'dx2tot', 'dx2(mx)', 'dx2(my)', 'dx2(mz)' ]
+        'dx2tot', 'dx2(mx)', 'dx2(my)', 'dx2(mz)', 'fy3x2tot', 'fy3x2(mx)',
+        'fy3x2(my)', 'fy3x2(mz)', 'fxyztot', 'fxyz(mx)', 'fxyz(my)', 'fxyz(mz)',
+        'fyz2tot', 'fyz2(mx)', 'fyz(my)', 'fyz(mz)', 'fz3tot', 'fz3(mx)',
+        'fz3(my)', 'fz3(mz)', 'fxz2tot', 'fxz2(mx)', 'fxz2(my)', 'fxz2(mz)',
+        'fzx2tot', 'fzx2(mx)', 'fzx2(my)', 'fzx2(mz)', 'fx3tot', 'fx3(mx)',
+        'fx3(my)', 'fx3(mz)' ]
 
 
 # discarding energy column
@@ -41,36 +50,6 @@ label_ncl_lm = [ 'all', 'stot', 's(mx)', 's(my)', 's(mz)', 'pxtot', 'px(mx)', 'p
 def todic(labelarray):
     return { x : i for i, x in enumerate(labelarray) }
 
-def read_total_dos(raw_doscar, nedos, ispin):
-    counter = 6
-    energy = np.empty( nedos, dtype=float )
-    if ( ispin != 2 ):
-        dos = np.empty( nedos, dtype=float )
-        cdos = np.empty( nedos, dtype=float )
-        for i in range( nedos ):
-            energy[i], dos[i], cdos[i] = (float(x) for x in split( raw_doscar[counter+i] ))
-        return energy, dos, cdos
-    else:
-        dos_up = np.empty( nedos, dtype=float )
-        dos_down = np.empty( nedos, dtype=float )
-        for i in range( nedos ):
-            energy[i], dos_up[i], dos_down[i] = (float(x) for x in split(
-                raw_doscar[counter+i] )[:3])
-        return energy, dos_up, dos_down
-
-def read_projected_dos(raw_doscar, nedos, natoms):
-    counter = 6 + nedos
-    # skip header
-    counter += 1
-    ncol = len( split( raw_doscar[nedos+7] ) ) - 1 # remove one col for energies
-    pldos = np.empty( (natoms, nedos, ncol), dtype=float )
-    for i in range( natoms ):
-        for j in range( nedos ):
-            pldos[i,j] = np.array( [float(x) for x in split( raw_doscar[counter] )[1:] ] )
-            counter += 1
-        # skip header
-        counter += 1
-    return pldos, ncol
 
 class DOSCAR:
     ##### COSNTRUCTOR #####
@@ -97,10 +76,10 @@ class DOSCAR:
         counter = 6
 
         if ( self.incar.ispin != 2 ):
-            self.energy, self.dos, self.cdos = read_total_dos( doscar, self.nedos,
+            self.energy, self.dos, self.cdos = self._read_total_dos( doscar, self.nedos,
                     self.incar.ispin )
         else:
-            self.energy, self.dos_up, self.dos_down = read_total_dos( doscar,
+            self.energy, self.dos_up, self.dos_down, self.cup, self.cdown = self._read_total_dos( doscar,
                     self.nedos, self.incar.ispin )
 
         #self.dos /= vol
@@ -110,7 +89,7 @@ class DOSCAR:
             self.energy -= efermi
 
         if ( self.enableProjector ):
-            self.pldos, ncol = read_projected_dos( doscar, self.nedos, self.natoms )
+            self.pldos, ncol = self._read_projected_dos( doscar, self.nedos, self.natoms )
             # Extract labels
             ncol += 1 # add one col for all
             lm = self.incar.lorbit == 11 or self.incar.lorbit == 1
@@ -128,6 +107,55 @@ class DOSCAR:
             else: exit('\nUnrecognised structure. Aborting...\n')
             self.label = todic( self.guiLabel )
     ##############################  
+
+    ###### reading total helper ###########
+    def _read_total_dos(self, raw_doscar, nedos, ispin):
+        counter = 6
+        energy = np.empty( nedos, dtype=float )
+        if ( ispin != 2 ):
+            dos = np.empty( nedos, dtype=float )
+            cdos = np.empty( nedos, dtype=float )
+            for i in range( nedos ):
+                energy[i], dos[i], cdos[i] = (float(x) for x in split( raw_doscar[counter+i] ))
+            return energy, dos, cdos
+        else:
+            dos_up = np.empty( nedos, dtype=float )
+            dos_down = np.empty( nedos, dtype=float )
+            cup = np.empty( nedos, dtype=float )
+            cdown = np.empty( nedos, dtype=float )
+            for i in range( nedos ):
+                energy[i], dos_up[i], dos_down[i], cup[i], cdown[i] = (float(x) for x in split(
+                    raw_doscar[counter+i] )[:5])
+            return energy, dos_up, dos_down, cup, cdown
+    ##############################  
+
+
+    ######## reading projected helper ##############
+    def _read_projected_dos(self, raw_doscar, nedos, natoms):
+        counter = 6 + nedos
+        # skip header
+        counter += 1
+        ncol = len( split( raw_doscar[nedos+7] ) ) - 1 # remove one col for energies
+        one_more_line = False
+        if ( ncol == 36 and self.incar.ncl and self.incar.lorbit == 11): 
+            one_more_line=True
+            ncol += 28
+        pldos = np.empty( (natoms, nedos, ncol), dtype=float )
+        for i in range( natoms ):
+            for j in range( nedos ):
+                tmp = np.array( [float(x) for x in split( raw_doscar[counter] )[1:] ] )
+                if ( one_more_line ):
+                    counter += 1
+                    tmp1 = np.array( [float(x) for x in split( raw_doscar[counter] ) ] )
+                    pldos[i,j] = np.concatenate((tmp, tmp1))
+                else:
+                    pldos[i,j] = tmp
+
+                counter += 1
+            # skip header
+            counter += 1
+        return pldos, ncol
+    ########################################
 
 
     ##### PROJECTOR #####
