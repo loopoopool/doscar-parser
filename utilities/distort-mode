@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ $# -eq 6 ]; then
+	python $HOME/Codes/ploos/utilities/generate_poscar.py $1 $2 $3 $4 $5 $6 tmp
+	exit 0
+elif [ $# -eq 7 ]; then
+	python $HOME/Codes/ploos/utilities/generate_poscar.py $1 $2 $3 $4 $5 $6 $7
+	exit 0
+else
+       printf "Wrong number of arguments!\n\n"
+       printf "Please provide:\n"
+       printf " 1. POSCAR.ref\n"
+       printf " 2. ref Os atom in POSCAR.ref\n"
+       printf " 3. POSCAR\n"
+       printf " 4. ref Od in POSCAR\n"
+       printf " 5. Mode:\n"
+       printf "    Q1   Q3   Q2   Qyz  Qxz  Qxy  Q'x  Q'y  Q'z  "
+       printf "Q''x Q''y Q''z Qx   Qy   Qz   Q'yz Q'xz Q'xy\n"
+       printf "    0    1    2    3    4    5    6    7    8    "
+       printf "9    10   11   12   13   14   15   16   17\n"
+       printf " 6. scaling factor\n"
+       printf " 7. output filename (optional)\n\n"
+       exit -1
+fi

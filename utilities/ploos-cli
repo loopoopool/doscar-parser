@@ -1,0 +1,9 @@
+#!/bin/bash
+
+ploosdir='/home/cepo/Codes/ploos/utilities'
+
+printf "\n**************************************************\n"
+printf "************* PLOOS ******************************\n"
+printf "**************************************************\n"
+
+python $ploosdir/launch-cli.py

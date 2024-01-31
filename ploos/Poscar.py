@@ -91,23 +91,40 @@ class POSCAR(object):
         tmp = []
         if (mode=='D'):
             self._update_directMatrix()
-            for x, f in zip(np.round(self.directMatrix, digits), self.SDflags):
-                tmp.append( (x[0], x[1], x[2], f[0], f[1], f[2]) )
+            if ( self.SelectiveDynamics ):
+                for x, f in zip(np.round(self.directMatrix, digits), self.SDflags):
+                    tmp.append( (x[0], x[1], x[2], f[0], f[1], f[2]) )
+            else:
+                for x in np.round(self.directMatrix, digits):
+                    tmp.append( (x[0], x[1], x[2]) )
         elif (mode=='C'):
             self._update_cartesianMatrix()
-            for x, f in zip(np.round(self.cartesianMatrix, digits), self.SDflags):
-                tmp.append( (x[0], x[1], x[2], f[0], f[1], f[2]) )
+            if ( self.SelectiveDynamics ):
+                for x, f in zip(np.round(self.cartesianMatrix, digits), self.SDflags):
+                    tmp.append( (x[0], x[1], x[2], f[0], f[1], f[2]) )
+            else:
+                for x in np.round(self.cartesianMatrix, digits):
+                    tmp.append( (x[0], x[1], x[2]) )
         else:
             raise Exception('Wrong mode.')
-        
-        for x in tmp:
-            tmp_str = '  {0:>13.11f}  {1:>13.11f}  {2:>13.11f} {3:} {4:} {5:}\n'
-            data.append( tmp_str.format(x[0], x[1], x[2], x[3], x[4], x[5]) )
+       
+        if ( self.SelectiveDynamics ):
+            for x in tmp:
+                tmp_str = '  {0:>13.11f}  {1:>13.11f}  {2:>13.11f} {3:} {4:} {5:}\n'
+                data.append( tmp_str.format(x[0], x[1], x[2], x[3], x[4], x[5]) )
+        else:
+            for x in tmp:
+                tmp_str = '  {0:>13.11f}  {1:>13.11f}  {2:>13.11f}\n'
+                data.append( tmp_str.format(x[0], x[1], x[2]) )
         with open(filename, 'w') as f:
             f.writelines(data)
 
     def setCartesianCoordinates(self, atomNumber, vector):
         self.cartesianMatrix[atomNumber-1] = vector
+        self._update_directMatrix()
+    
+    def setDirectCoordinates(self, atomNumber, vector):
+        self.directMatrix[atomNumber-1] = vector
         self._update_directMatrix()
 
     def getCartesianCoordinates(self, atomNumber):

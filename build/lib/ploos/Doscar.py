@@ -137,9 +137,9 @@ class DOSCAR:
         counter += 1
         ncol = len( split( raw_doscar[nedos+7] ) ) - 1 # remove one col for energies
         one_more_line = False
-        if ( ncol == 36 and self.incar.ncl and self.incar.lorbit == 11): 
-            one_more_line=True
-            ncol += 28
+#        if ( ncol == 36 and self.incar.ncl and self.incar.lorbit == 11): 
+#            one_more_line=True
+#            ncol += 28
         pldos = np.empty( (natoms, nedos, ncol), dtype=float )
         for i in range( natoms ):
             for j in range( nedos ):

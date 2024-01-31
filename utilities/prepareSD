@@ -1,0 +1,14 @@
+#!/bin/bash
+
+infile=$1
+
+if [ $# -eq 2 ]; then
+        outfile=$2
+else
+        outfile='POSCAR.tmp'
+fi
+
+python $HOME/Codes/ploos/utilities/prepare_selective_dynamics.py $infile $outfile
+
+exit 0
+

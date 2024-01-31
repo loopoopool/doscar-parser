@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ $# -ne 2 ]; then
+       printf "Wrong number of arguments!\n\n"
+       printf "Please provide:\n"
+       printf " 1. POSCAR\n"
+       printf " 2. ref Os atom in POSCAR\n\n"
+       exit -1
+fi
+
+python $HOME/Codes/ploos/utilities/octahedron-cubic.py $1 $2
+
+exit 0 

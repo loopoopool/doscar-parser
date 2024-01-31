@@ -1,0 +1,3 @@
+Usage example:
+
+python printQ.py 'tetragonal' POSCAR.ref 5 POSCAR.dist 7
